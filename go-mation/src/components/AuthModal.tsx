@@ -22,6 +22,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
 
   const { data } = useSession();
   
@@ -34,6 +35,20 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       setError(error.response.data.error ?? 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
+      setStep('otp');
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      setIsLoading(true);
+      const { data } = await axios.post('/api/auth/verify-email', { email, otp: otp.join('') });
+      
+    } catch (error: any) {
+      setError(error.response.data.error ?? 'Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setStep('login');
     }
   };
 
@@ -54,6 +69,23 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
   const handleGoogleLogin = async () => {
     await signIn('google');
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+  
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      // Move focus to next input
+      document.getElementById(`otp-${index + 1}`)?.focus();
+    }
+
+    if (!value && index > 0) {
+      // Move focus to previous input
+      document.getElementById(`otp-${index - 1}`)?.focus();
+    }
   };
   
   return (
@@ -155,10 +187,28 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     </motion.div>
                   )}
                   {step === 'otp' && (
-                    <button className='w-full h-11 font-semibold rounded-xl border border-black/20 flex items-center justify-center gap-3 hover:bg-black hover:text-white transition-colors'>
-                      <Image src="/google.png" alt="Google" width={25} height={25} />
-                      <span>Continue with Google</span>
-                    </button>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <h2 className='text-2xl font-bold text-center mb-6'>Verify Email</h2>
+                      <div className='mt-6 flex justify-between gap-2'>
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            id={`otp-${index}`}
+                            type="text"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            className='w-12 h-12 text-center text-2xl font-bold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                          />
+                        ))}
+                      </div>
+                      <button className='w-full mt-6 h-11 font-semibold rounded-xl border border-black/20 flex items-center justify-center gap-3 hover:bg-black hover:text-white transition-colors' onClick={handleVerifyOtp}>Verify</button>
+                    </motion.div>
                   )}
                 </div>
               </div>
